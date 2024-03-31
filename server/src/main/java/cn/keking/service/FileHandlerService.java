@@ -5,6 +5,7 @@ import cn.keking.model.FileAttribute;
 import cn.keking.model.FileType;
 import cn.keking.service.cache.CacheService;
 import cn.keking.service.cache.NotResourceCache;
+import cn.keking.utils.DownloadUtils;
 import cn.keking.utils.EncodingDetects;
 import cn.keking.utils.KkFileUtils;
 import cn.keking.utils.WebUtils;
@@ -471,6 +472,8 @@ public class FileHandlerService implements InitializingBean {
             }
         }
 
+        Map<String, String> authHeaders = DownloadUtils.getAuthHeaders(url);
+        attribute.setAuthHeaders(authHeaders);
         return attribute;
     }
 

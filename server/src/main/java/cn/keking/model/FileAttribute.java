@@ -2,6 +2,8 @@ package cn.keking.model;
 
 import cn.keking.config.ConfigConstants;
 
+import java.util.Map;
+
 /**
  * Created by kl on 2018/1/17.
  * Content :
@@ -19,6 +21,8 @@ public class FileAttribute {
     private String tifPreviewType;
     private Boolean skipDownLoad = false;
     private Boolean forceUpdatedCache = false;
+
+    private Map<String, String> authHeaders;
 
     public FileAttribute() {
     }
@@ -124,4 +128,11 @@ public class FileAttribute {
         this.forceUpdatedCache = forceUpdatedCache;
     }
 
+    public void setAuthHeaders(Map<String, String> authHeaders) {
+        this.authHeaders = authHeaders;
+    }
+
+    public Map<String, String> getAuthHeaders() {
+        return authHeaders;
+    }
 }

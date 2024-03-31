@@ -40,7 +40,12 @@ public class PictureFilePreviewImpl extends CommonPreviewImpl {
             imgUrls.addAll(zipImgUrls);
         }
         // 不是http开头，浏览器不能直接访问，需下载到本地
-        super.filePreviewHandle(url, model, fileAttribute);
+        String localFilePath = super.filePreviewHandle(url, model, fileAttribute);
+        if (localFilePath != null) {
+            // empty imgUrls
+            imgUrls.clear();
+            imgUrls.add(localFilePath);
+        }
         model.addAttribute("imgUrls", imgUrls);
         return PICTURE_FILE_PREVIEW_PAGE;
     }

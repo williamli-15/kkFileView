@@ -13,6 +13,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by kl on 2018/1/17.
@@ -32,13 +33,15 @@ public class CommonPreviewImpl implements FilePreview {
     @Override
     public String filePreviewHandle(String url, Model model, FileAttribute fileAttribute) {
         // 不是http开头，浏览器不能直接访问，需下载到本地
-        if (url != null && !url.toLowerCase().startsWith("http")) {
+        // 需要授权的文件，先下载到本地
+        if (url != null && !url.toLowerCase().startsWith("http") || fileAttribute.getAuthHeaders().size() > 0) {
             ReturnResponse<String> response = DownloadUtils.downLoad(fileAttribute, null);
             if (response.isFailure()) {
                 return otherFilePreview.notSupportedFile(model, fileAttribute, response.getMsg());
             } else {
                 String file = fileHandlerService.getRelativePath(response.getContent());
                 model.addAttribute("currentUrl", file);
+                return file;
             }
         } else {
             model.addAttribute("currentUrl", url);

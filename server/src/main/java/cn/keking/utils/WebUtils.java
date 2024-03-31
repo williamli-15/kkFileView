@@ -14,6 +14,7 @@ import javax.servlet.http.HttpSession;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -318,4 +319,27 @@ public class WebUtils {
         }
         session.removeAttribute(key);
     }
+    
+    public static Map<String, String> getParamPairs(String str) {
+        Map<String, String> map = new HashMap<>();
+        String decodedStr = null;
+        try {
+            decodedStr = URLDecoder.decode(str, "UTF-8");
+            String[] kvPairs = decodedStr.split("&");
+            for(String kv : kvPairs){
+                // split by first "="
+                String[] pair = kv.split("=", 2);
+                if (pair.length < 2) {
+                    continue;
+                }
+                String key = pair[0];
+                String value = pair[1];
+                map.put(key, value);
+            }
+            return map;
+        } catch (UnsupportedEncodingException e) {
+            return map;
+        }
+    }
+
 }

@@ -14,8 +14,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static cn.keking.utils.KkFileUtils.isFtpUrl;
@@ -72,6 +75,12 @@ public class DownloadUtils {
             response.setMsg(fileName);
             return response;
         }
+        
+        // 获取授权信息
+        Map<String, String> authHeaders = fileAttribute.getAuthHeaders();
+        String authHeadersStr = WebUtils.getUrlParameterReg(urlStr, "authHeaders");
+        urlStr = urlStr.replace("authHeaders=" + authHeadersStr, "");
+
         try {
             URL url = WebUtils.normalizedURL(urlStr);
             if (!urlStr.toLowerCase().startsWith("ftp:")&& !urlStr.toLowerCase().startsWith("file")){
@@ -79,10 +88,25 @@ public class DownloadUtils {
                 urlcon.setConnectTimeout(30000);
                 urlcon.setReadTimeout(30000);
                 urlcon.setInstanceFollowRedirects(false);
+                
+                if (authHeaders.size() > 0) {
+                    for (Map.Entry<String, String> entry : authHeaders.entrySet()) {
+                        String key = entry.getKey();
+                        String value = entry.getValue();
+                        urlcon.setRequestProperty(key, value);
+                    }
+                }
+
                 int responseCode = urlcon.getResponseCode();
                 if(responseCode != 200){
                     if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) { //301 302
-                        url =new URL(urlcon.getHeaderField("Location"));
+                        String location = urlcon.getHeaderField("Location");
+                        // check protocal host
+                        String baseUrl = url.getProtocol() + "://" + url.getHost();
+                        if (!location.startsWith("http")) {
+                            location = baseUrl + location;
+                        }
+                        url =new URL(location);
                     }
                     if (responseCode == 403|| responseCode == 500) { //301 302
                         response.setCode(1);
@@ -121,7 +145,18 @@ public class DownloadUtils {
             if (!fileAttribute.getSkipDownLoad()) {
                 if (isHttpUrl(url)) {
                     File realFile = new File(realPath);
-                    FileUtils.copyURLToFile(url, realFile);
+                    if (authHeaders.size() > 0) {
+                        urlcon = (HttpURLConnection) url.openConnection();
+                        for (Map.Entry<String, String> entry : authHeaders.entrySet()) {
+                            String key = entry.getKey();
+                            String value = entry.getValue();
+                            urlcon.setRequestProperty(key, value);
+                        }
+                        // download file to realFile
+                        FileUtils.copyInputStreamToFile(urlcon.getInputStream(), realFile);
+                    } else {
+                        FileUtils.copyURLToFile(url, realFile);
+                    }
                 } else if (isFtpUrl(url)) {
                     String ftpUsername = WebUtils.getUrlParameterReg(fileAttribute.getUrl(), URL_PARAM_FTP_USERNAME);
                     String ftpPassword = WebUtils.getUrlParameterReg(fileAttribute.getUrl(), URL_PARAM_FTP_PASSWORD);
@@ -183,6 +218,21 @@ public class DownloadUtils {
             }
         }
         return realPath;
+    }
+
+    public static Map<String, String> getAuthHeaders(String urlStr) {
+        Map<String, String> authHeaders = new HashMap<>();
+        String authHeadersStr = WebUtils.getUrlParameterReg(urlStr, "authHeaders");
+        if (authHeadersStr != null) {
+            String decodeStr = null;
+            try {
+                decodeStr = URLDecoder.decode(authHeadersStr, "UTF-8");
+                authHeaders = WebUtils.getParamPairs(decodeStr);
+            } catch (UnsupportedEncodingException e) {
+                logger.error("parse authHeaders error:", e);
+            }
+        }
+        return authHeaders;
     }
 
 }
